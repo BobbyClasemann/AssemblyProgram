@@ -1,0 +1,95 @@
+;Programmer: Bobby Clasemann
+;Altering a string
+.386
+INCLUDE Irvine32.inc
+.stack 4096
+ExitProcess proto, dwExitCode:dword
+
+.data
+getString byte 51 DUP(0)			; input buffer + null character
+prompt byte "Enter a string: ", 0
+prompt2 byte "Enter a character to remove: ", 0
+
+.code
+main PROC
+mov edx, offset prompt			; sets up to display command
+call writestring				; displays command
+mov edx, offset getString			; point to the buffer
+mov ecx, sizeof getString			; puts max chacters into ecx
+call ReadString				; gets string from user
+mov ebx, eax					; moves num of elements into ebx
+
+mov edx, offset prompt2			; sets up to display command
+call writestring				; displays command
+call readchar					; gets character from user
+call writechar
+call crlf					; newline
+
+call remove					; calls remove procedure
+
+invoke ExitProcess, 0
+main endp
+; --------------------------------------------------------------------
+; remove
+; Removes a character from an inputted string and condenses
+; the string without said character
+; Recieves: ECX = number of elements in string
+;			ESI = the array offset
+;			EDI = the array offset
+; Returns:  EDX = new array offset without the input character
+; --------------------------------------------------------------------
+
+
+remove PROC
+
+mov ecx, ebx					; loops by how long getString is
+mov esi, offset getString			; moves array offset into esi
+mov edi, offset getString			; moves array offset into edi
+
+L1 :						; start of loop 1
+
+	cmp byte ptr[esi], al		; is the character = char ?
+	push ecx				; save value in case of 
+						; char being removed
+	push esi				; same
+	push edi				; same
+	je L2					; is equal go to L2
+back :						; skips the compare 
+	pop edi				; restore value in case of 
+						; char not being removed or after altering
+						; the array in L2 to be in correct position
+	pop esi				; same
+	pop ecx				; same
+	inc esi				; go to next index in array
+	inc edi				; same
+	loop L1				; loop L1
+
+	jmp quit				; leaves if else
+
+L2:						; start of loop 2
+
+	inc edi				; goes to next index
+	mov ah, [edi]				; moves next index into al
+	mov byte ptr[esi], ah		; moves next index into previous
+	inc esi				; goes to next index in array
+	loop L2				; repeat L2
+	pop edi				; restore edi to before it was
+						; changed in L2
+	pop esi				; same
+	dec esi				; go to prior index due to being in the
+	dec edi				; wrong index after restoring values
+	push esi				; save value after dec to be in 
+						; correct spot to compare again
+	push edi				; same
+	jmp back				; skip the compare in L1
+
+quit :
+
+mov edx, offset getString			; moves offset of new string into edx
+call writestring				; displays new string
+call crlf					; newline
+
+ret
+
+remove endp
+end main
